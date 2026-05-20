@@ -3,7 +3,7 @@ import unittest
 from graph_optimizer import GraphOptimizer
 
 
-class GraphOptimizerTests(unittest.TestCase):
+class TestGraphOptimizer(unittest.TestCase):
     def test_path_does_not_traverse_intermediate_node(self):
         optimizer = GraphOptimizer(width=3, height=2)
         result = optimizer.optimize(
