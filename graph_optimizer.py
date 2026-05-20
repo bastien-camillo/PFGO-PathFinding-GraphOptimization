@@ -80,8 +80,8 @@ class GraphOptimizer:
             return
 
         random = Random(seed)
-        initial_cells = self._cells[:]
         for _ in range(max_random_layouts):
+            initial_cells = self._cells[:]
             random.shuffle(initial_cells)
             picked = initial_cells[:n]
             yield {node: picked[i] for i, node in enumerate(nodes)}
