@@ -13,6 +13,8 @@ class TestGraphOptimizer(unittest.TestCase):
 
         path = result.paths[("A", "C")]
         node_positions = result.positions
+        self.assertEqual(path[0], node_positions["A"])
+        self.assertEqual(path[-1], node_positions["C"])
         self.assertNotIn(node_positions["B"], path)
 
     def test_paths_do_not_cross_without_common_endpoints(self):
@@ -38,6 +40,18 @@ class TestGraphOptimizer(unittest.TestCase):
         path_bc = set(result.paths[("B", "C")])
         intersections = path_ac & path_bc
         self.assertEqual(intersections, {result.positions["C"]})
+
+    def test_paths_can_meet_on_common_source_only(self):
+        optimizer = GraphOptimizer(width=3, height=3)
+        result = optimizer.optimize(
+            nodes=["A", "B", "C"],
+            edges=[("A", "B"), ("A", "C")],
+        )
+
+        path_ab = set(result.paths[("A", "B")])
+        path_ac = set(result.paths[("A", "C")])
+        intersections = path_ab & path_ac
+        self.assertEqual(intersections, {result.positions["A"]})
 
 
 if __name__ == "__main__":
