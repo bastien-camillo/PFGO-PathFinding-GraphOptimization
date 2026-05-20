@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import deque
 from dataclasses import dataclass
 from itertools import permutations
-from math import prod
+from math import perm
 from random import Random
 
 
@@ -73,7 +73,7 @@ class GraphOptimizer:
         seed: int,
     ):
         n = len(nodes)
-        permutation_count = prod(range(len(self._cells) - n + 1, len(self._cells) + 1))
+        permutation_count = perm(len(self._cells), n)
         if permutation_count <= max_layouts:
             for picked_cells in permutations(self._cells, n):
                 yield {node: picked_cells[i] for i, node in enumerate(nodes)}
