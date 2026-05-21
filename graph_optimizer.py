@@ -27,8 +27,8 @@ def create_directed_graph(size: int, complexity: int) -> DirectedGraphDefinition
     if complexity < 1:
         raise ValueError("complexity must be at least 1.")
 
-    max_levels = max(2, (size // 2) + 1)
-    level_count = min(max_levels, max(2, complexity + 2))
+    max_levels_for_node_spread = max(2, (size // 2) + 1)
+    level_count = min(max_levels_for_node_spread, max(2, complexity + 2))
 
     nodes = [f"B{i}" for i in range(size)]
     level_nodes: list[list[str]] = [[] for _ in range(level_count)]
@@ -46,19 +46,23 @@ def create_directed_graph(size: int, complexity: int) -> DirectedGraphDefinition
     representatives = [group[0] for group in level_nodes]
     last_level = level_count - 1
 
-    desired_special = 0 if level_count < 3 else min(complexity, level_count - 2)
+    additional_entry_and_exit_count = 0 if level_count < 3 else min(complexity, level_count - 2)
     entry_nodes: set[str] = set()
     exit_nodes: set[str] = set()
+    intermediate_levels = list(range(1, level_count - 1))
+    reverse_intermediate_levels = list(reversed(intermediate_levels))
+    local_neighbor_fan = 1 + (complexity // 2)
+    forward_fan = 1 + complexity
 
-    for i in range(desired_special):
-        level = 1 + (i % (level_count - 2))
+    for i in range(additional_entry_and_exit_count):
+        level = intermediate_levels[i % len(intermediate_levels)]
         candidates = level_nodes[level][1:]
         if not candidates:
             continue
         entry_nodes.add(candidates[i % len(candidates)])
 
-    for i in range(desired_special):
-        level = (level_count - 2) - (i % (level_count - 2))
+    for i in range(additional_entry_and_exit_count):
+        level = reverse_intermediate_levels[i % len(reverse_intermediate_levels)]
         candidates = [node for node in level_nodes[level][1:] if node not in entry_nodes]
         if not candidates:
             continue
@@ -86,12 +90,12 @@ def create_directed_graph(size: int, complexity: int) -> DirectedGraphDefinition
                 continue
             if level > 0 and node not in entry_nodes:
                 previous_nodes = level_nodes[level - 1]
-                parent_count = min(len(previous_nodes), 1 + (complexity // 2))
+                parent_count = min(len(previous_nodes), local_neighbor_fan)
                 for i in range(parent_count):
                     add_edge(previous_nodes[i % len(previous_nodes)], node)
             if level < last_level and node not in exit_nodes:
                 next_nodes = level_nodes[level + 1]
-                child_count = min(len(next_nodes), 1 + (complexity // 2))
+                child_count = min(len(next_nodes), local_neighbor_fan)
                 for i in range(child_count):
                     add_edge(node, next_nodes[(level + i) % len(next_nodes)])
 
@@ -99,7 +103,7 @@ def create_directed_graph(size: int, complexity: int) -> DirectedGraphDefinition
         sources = level_nodes[level]
         targets = level_nodes[level + 1]
         for i, source in enumerate(sources):
-            fan_out = min(len(targets), 1 + complexity)
+            fan_out = min(len(targets), forward_fan)
             for j in range(fan_out):
                 add_edge(source, targets[(i + j) % len(targets)])
         if complexity > 2 and level + 2 < level_count:
@@ -108,8 +112,13 @@ def create_directed_graph(size: int, complexity: int) -> DirectedGraphDefinition
                 add_edge(source, targets_two_levels[i % len(targets_two_levels)])
 
     edges = sorted(edges_set)
-    entries = sorted(entry_nodes)
-    exits = sorted(exit_nodes)
+    indegree = {node: 0 for node in nodes}
+    outdegree = {node: 0 for node in nodes}
+    for source, target in edges:
+        outdegree[source] += 1
+        indegree[target] += 1
+    entries = sorted(node for node in nodes if indegree[node] == 0)
+    exits = sorted(node for node in nodes if outdegree[node] == 0)
     return DirectedGraphDefinition(nodes=nodes, edges=edges, levels=levels, entries=entries, exits=exits)
 
 

@@ -26,7 +26,7 @@ print(result.paths)
 print(result.total_length)
 ```
 
-### Génération d'un graphe orienté continu
+### Generating a continuous directed graph
 
 ```python
 from graph_optimizer import create_directed_graph
