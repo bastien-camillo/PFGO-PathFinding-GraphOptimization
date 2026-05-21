@@ -13,6 +13,107 @@ Path = list[Position]
 
 
 @dataclass(frozen=True)
+class DirectedGraphDefinition:
+    nodes: list[str]
+    edges: list[Edge]
+    levels: dict[str, int]
+    entries: list[str]
+    exits: list[str]
+
+
+def create_directed_graph(size: int, complexity: int) -> DirectedGraphDefinition:
+    if size < 2:
+        raise ValueError("size must be at least 2.")
+    if complexity < 1:
+        raise ValueError("complexity must be at least 1.")
+
+    max_levels = max(2, (size // 2) + 1)
+    level_count = min(max_levels, max(2, complexity + 2))
+
+    nodes = [f"B{i}" for i in range(size)]
+    level_nodes: list[list[str]] = [[] for _ in range(level_count)]
+
+    cursor = 0
+    for level in range(level_count):
+        level_nodes[level].append(nodes[cursor])
+        cursor += 1
+    while cursor < size:
+        level = (cursor - level_count) % level_count
+        level_nodes[level].append(nodes[cursor])
+        cursor += 1
+
+    levels = {node: level for level, group in enumerate(level_nodes) for node in group}
+    representatives = [group[0] for group in level_nodes]
+    last_level = level_count - 1
+
+    desired_special = 0 if level_count < 3 else min(complexity, level_count - 2)
+    entry_nodes: set[str] = set()
+    exit_nodes: set[str] = set()
+
+    for i in range(desired_special):
+        level = 1 + (i % (level_count - 2))
+        candidates = level_nodes[level][1:]
+        if not candidates:
+            continue
+        entry_nodes.add(candidates[i % len(candidates)])
+
+    for i in range(desired_special):
+        level = (level_count - 2) - (i % (level_count - 2))
+        candidates = [node for node in level_nodes[level][1:] if node not in entry_nodes]
+        if not candidates:
+            continue
+        exit_nodes.add(candidates[i % len(candidates)])
+
+    edges_set: set[Edge] = set()
+
+    def add_edge(source: str, target: str) -> None:
+        if source == target:
+            return
+        if source in exit_nodes:
+            return
+        if target in entry_nodes:
+            return
+        if levels[source] >= levels[target]:
+            return
+        edges_set.add((source, target))
+
+    for level in range(level_count - 1):
+        add_edge(representatives[level], representatives[level + 1])
+
+    for level, group in enumerate(level_nodes):
+        for node in group:
+            if node == representatives[level]:
+                continue
+            if level > 0 and node not in entry_nodes:
+                previous_nodes = level_nodes[level - 1]
+                parent_count = min(len(previous_nodes), 1 + (complexity // 2))
+                for i in range(parent_count):
+                    add_edge(previous_nodes[i % len(previous_nodes)], node)
+            if level < last_level and node not in exit_nodes:
+                next_nodes = level_nodes[level + 1]
+                child_count = min(len(next_nodes), 1 + (complexity // 2))
+                for i in range(child_count):
+                    add_edge(node, next_nodes[(level + i) % len(next_nodes)])
+
+    for level in range(level_count - 1):
+        sources = level_nodes[level]
+        targets = level_nodes[level + 1]
+        for i, source in enumerate(sources):
+            fan_out = min(len(targets), 1 + complexity)
+            for j in range(fan_out):
+                add_edge(source, targets[(i + j) % len(targets)])
+        if complexity > 2 and level + 2 < level_count:
+            targets_two_levels = level_nodes[level + 2]
+            for i, source in enumerate(sources):
+                add_edge(source, targets_two_levels[i % len(targets_two_levels)])
+
+    edges = sorted(edges_set)
+    entries = sorted(entry_nodes)
+    exits = sorted(exit_nodes)
+    return DirectedGraphDefinition(nodes=nodes, edges=edges, levels=levels, entries=entries, exits=exits)
+
+
+@dataclass(frozen=True)
 class OptimizationResult:
     positions: dict[str, Position]
     paths: dict[Edge, Path]

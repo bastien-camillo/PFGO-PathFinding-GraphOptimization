@@ -26,6 +26,17 @@ print(result.paths)
 print(result.total_length)
 ```
 
+### Génération d'un graphe orienté continu
+
+```python
+from graph_optimizer import create_directed_graph
+
+generated = create_directed_graph(size=16, complexity=4)
+print(generated.nodes)
+print(generated.edges)
+print(generated.levels)
+```
+
 ### Tests
 
 ```bash
